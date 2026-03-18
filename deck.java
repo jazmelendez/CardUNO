@@ -3,25 +3,38 @@ import java.util.Collections;
 import java.util.List;
 
 public class Deck {
+
     private List<Card> cartas;
 
     public Deck() {
         cartas = new ArrayList<>();
         createDeck();
         shuffle();
-        validateCardCount();
     }
 
     private void createDeck() {
-        String[] colors = {"Rojo", "Azul", "Verde", "Amarillo"};
 
-        for (String color : colors) {
-            for (int number = 0; number <= 9; number++) {
-                cartas.add(new Card(color, number));
-                if (number != 0) {
-                    cartas.add(new Card(color, number));
+        String[] colors = {"Rojo","Azul","Verde","Amarillo"};
+
+        for(String color : colors){
+
+            for(int number=0; number<=9; number++){
+
+                cartas.add(new Card(color,number,"NUMBER"));
+
+                if(number!=0){
+                    cartas.add(new Card(color,number,"NUMBER"));
                 }
             }
+
+            cartas.add(new Card(color,-1,"SKIP"));
+            cartas.add(new Card(color,-1,"REVERSE"));
+            cartas.add(new Card(color,-1,"DRAW2"));
+        }
+
+        for(int i=0;i<4;i++){
+            cartas.add(new Card("Negro",-1,"WILD"));
+            cartas.add(new Card("Negro",-1,"DRAW4"));
         }
     }
 
@@ -30,22 +43,15 @@ public class Deck {
     }
 
     public Card drawCard() {
-        if (!cartas.isEmpty()) {
-            return cartas.remove(0);
+
+        if(cartas.isEmpty()){
+            throw new RuntimeException("La baraja se quedó sin cartas");
         }
-        System.out.println("Ya no hay cartas en la baraja.");
-        return null;
+
+        return cartas.remove(0);
     }
 
-    public int size() {
+    public int size(){
         return cartas.size();
-    }
-
-    private void validateCardCount() {
-        if (cartas.size() == 76) {
-            System.out.println("La baraja tiene 76 cartas.");
-        } else {
-            System.out.println("Advertencia: la baraja tiene " + cartas.size() + " cartas.");
-        }
     }
 }
