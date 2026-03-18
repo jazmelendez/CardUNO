@@ -2,43 +2,52 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Hand {
+
     private List<Card> mano;
 
-    public Hand() {
+    public Hand(){
         mano = new ArrayList<>();
     }
 
-    public void addCard(Card c) {
+    public void addCard(Card c){
+
+        if(c == null){
+            System.out.println("No se pudo agregar carta (carta nula)");
+            return;
+        }
+
         mano.add(c);
     }
 
-    public Card playCard(int index) {
-        if (index >= 0 && index < mano.size()) {
-            return mano.remove(index);
+    public Card playCard(int index){
+
+        if(index < 0 || index >= mano.size()){
+            System.out.println("Índice inválido");
+            return null;
         }
-        return null;
+
+        return mano.remove(index);
     }
 
-    public boolean hasPlayableCard(Card cartaMesa) {
-        for (Card c : mano) {
-            if (c.isPlayable(cartaMesa)) {
-                return true;
-            }
-        }
-        return false;
-    }
+    public void showHand(){
 
-    public void showHand() {
-        for (int i = 0; i < mano.size(); i++) {
-            System.out.println(i + ": " + mano.get(i));
+        System.out.println("Tus cartas:");
+
+        for(int i = 0; i < mano.size(); i++){
+            System.out.println("[" + i + "] " + mano.get(i));
         }
     }
 
-    public int size() {
+    public int size(){
         return mano.size();
     }
 
-    public Card getCard(int index) {
+    public Card getCard(int index){
+
+        if(index < 0 || index >= mano.size()){
+            return null;
+        }
+
         return mano.get(index);
     }
 }
