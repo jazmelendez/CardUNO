@@ -1,57 +1,38 @@
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class Deck {
-
     private List<Card> cartas;
 
     public Deck() {
         cartas = new ArrayList<>();
         createDeck();
-        shuffle();
-    }
-
-    private void createDeck() {
-
-        String[] colors = {"Rojo","Azul","Verde","Amarillo"};
-
-        for(String color : colors){
-
-            for(int number=0; number<=9; number++){
-
-                cartas.add(new Card(color,number,"NUMBER"));
-
-                if(number!=0){
-                    cartas.add(new Card(color,number,"NUMBER"));
-                }
-            }
-
-            cartas.add(new Card(color,-1,"SKIP"));
-            cartas.add(new Card(color,-1,"REVERSE"));
-            cartas.add(new Card(color,-1,"DRAW2"));
-        }
-
-        for(int i=0;i<4;i++){
-            cartas.add(new Card("Negro",-1,"WILD"));
-            cartas.add(new Card("Negro",-1,"DRAW4"));
-        }
-    }
-
-    public void shuffle() {
         Collections.shuffle(cartas);
     }
 
-    public Card drawCard() {
+    private void createDeck() {
+        String[] colors = {"Rojo", "Azul", "Verde", "Amarillo"};
 
-        if(cartas.isEmpty()){
-            throw new RuntimeException("La baraja se quedó sin cartas");
+        for (String color : colors) {
+            for (int i = 0; i <= 9; i++) {
+                cartas.add(new Card(color, i, "NUMERO"));
+                if (i != 0) cartas.add(new Card(color, i, "NUMERO"));
+            }
+
+            for (int i = 0; i < 2; i++) {
+                cartas.add(new Card(color, -1, "+2"));
+                cartas.add(new Card(color, -1, "REVERSA"));
+                cartas.add(new Card(color, -1, "SALTO"));
+            }
         }
 
-        return cartas.remove(0);
+        // +4
+        for (int i = 0; i < 4; i++) {
+            cartas.add(new Card("Negro", -1, "+4"));
+        }
     }
 
-    public int size(){
-        return cartas.size();
+    public Card drawCard() {
+        if (cartas.isEmpty()) return null;
+        return cartas.remove(0);
     }
 }
