@@ -1,272 +1,290 @@
-import java.util.Scanner;
+import java.util.*;
 
 public class Game {
 
+    private List<Hand> jugadores;
     private Deck deck;
-    private Hand jugador;
-    private Hand computadora;
     private Card cartaMesa;
-    private boolean turnoJugador;
-    private Scanner scanner;
 
-    public Game(){
+    private int turnoActual;
+    private int direccion;
+
+    private Scanner scanner;
+    private String nombreJugador;
+
+    public Game() {
         deck = new Deck();
-        jugador = new Hand();
-        computadora = new Hand();
-        turnoJugador = true;
+        jugadores = new ArrayList<>();
         scanner = new Scanner(System.in);
+
+        System.out.print("Ingresa tu nombre: ");
+        nombreJugador = scanner.nextLine();
+
+        for (int i = 0; i < 4; i++) {
+            jugadores.add(new Hand());
+        }
+
+        turnoActual = 0;
+        direccion = 1;
     }
 
-    public void startGame(){
+    public void startGame() {
 
-        for(int i=0;i<7;i++){
-            jugador.addCard(deck.drawCard());
-            computadora.addCard(deck.drawCard());
+        for (int i = 0; i < 7; i++) {
+            for (Hand h : jugadores) {
+                h.addCard(deck.drawCard());
+            }
         }
 
         cartaMesa = deck.drawCard();
 
-        System.out.println("Carta inicial: " + cartaMesa);
-
         gameLoop();
     }
 
-    private void gameLoop(){
+    private void gameLoop() {
 
-        while(true){
+        while (true) {
 
-            if(turnoJugador){
-                playerTurn();
-            }else{
-                computerTurn();
+            mostrarEstado();
+
+            if (turnoActual == 0) {
+                turnoJugador();
+            } else {
+                turnoIA(turnoActual);
             }
 
-            if(isGameOver()){
-                break;
-            }
+            if (isGameOver()) break;
         }
     }
 
-    private void playerTurn(){
+    private void turnoJugador() {
 
         System.out.println("\nTu turno");
-        System.out.println("Carta en mesa: " + cartaMesa);
+        jugadores.get(0).showHand();
 
-        jugador.showHand();
+        System.out.print("Elige carta o -1 para robar: ");
+        int opcion = scanner.nextInt();
 
-        try{
+        if (opcion == -1) {
+            jugadores.get(0).addCard(deck.drawCard());
+            avanzarTurno();
+            return;
+        }
 
-            System.out.print("Elige carta o -1 para robar: ");
-            int opcion = scanner.nextInt();
+        Hand jugador = jugadores.get(0);
 
-            if(opcion==-1){
-                jugador.addCard(deck.drawCard());
-                turnoJugador = false;
-                return;
-            }
-
-            Card seleccionada = jugador.getCard(opcion);
-
-            if(seleccionada==null){
-                System.out.println("Índice inválido");
-                return;
-            }
-
-            if(seleccionada.isPlayable(cartaMesa)){
-
-                cartaMesa = jugador.playCard(opcion);
-
-                System.out.println("Jugaste: " + cartaMesa);
-
-                if(jugador.size()==1){
-                    System.out.print("¡Te queda una carta! Escribe UNO: ");
-                    String uno = scanner.next();
-                    if(!uno.equalsIgnoreCase("UNO")){
-                        System.out.println("No dijiste UNO, robas 2 cartas");
-                        jugador.addCard(deck.drawCard());
-                        jugador.addCard(deck.drawCard());
-                    }
-                }
-
-                applyCardEffect(cartaMesa);
-
-            }else{
-
-                System.out.println("Carta no válida, robas una");
-                jugador.addCard(deck.drawCard());
-                turnoJugador = false;
-            }
-
-        }catch(Exception e){
+        if (opcion < 0 || opcion >= jugador.size()) {
             System.out.println("Entrada inválida");
-            scanner.nextLine();
+            return;
+        }
+
+        Card c = jugador.getCard(opcion);
+
+        if (c.isPlayable(cartaMesa)) {
+
+            cartaMesa = jugador.playCard(opcion);
+
+            verificarUNO(0);
+
+            aplicarEfecto(cartaMesa, 0);
+
+        } else {
+
+            System.out.println("No válida, robas carta");
+            jugador.addCard(deck.drawCard());
+            avanzarTurno();
         }
     }
 
-    private void computerTurn(){
+    private void turnoIA(int i) {
 
-        System.out.println("\nTurno computadora");
+        Hand cpu = jugadores.get(i);
+        System.out.println("\nTurno IA " + i);
 
-        for(int i=0;i<computadora.size();i++){
+        for (int j = 0; j < cpu.size(); j++) {
 
-            Card c = computadora.getCard(i);
+            Card c = cpu.getCard(j);
 
-            if(c.isPlayable(cartaMesa)){
+            if (c.isPlayable(cartaMesa)) {
 
-                cartaMesa = computadora.playCard(i);
+                cartaMesa = cpu.playCard(j);
 
-                System.out.println("Computadora jugó: " + cartaMesa);
+                System.out.println("IA jugó: " + cartaMesa);
 
-                if(computadora.size()==1){
-                    System.out.println("Computadora dice UNO");
-                }
+                verificarUNO(i);
 
-                applyCardEffect(cartaMesa);
-
+                aplicarEfecto(cartaMesa, i);
                 return;
             }
         }
 
-        computadora.addCard(deck.drawCard());
+        Card robada = deck.drawCard();
 
-        System.out.println("Computadora roba carta");
+        if (robada != null && robada.isPlayable(cartaMesa)) {
 
-        turnoJugador = true;
+            cartaMesa = robada;
+
+            System.out.println("IA robó y jugó: " + cartaMesa);
+
+            verificarUNO(i);
+
+            aplicarEfecto(cartaMesa, i);
+
+        } else {
+
+            cpu.addCard(robada);
+            System.out.println("IA roba y pasa");
+            avanzarTurno();
+        }
     }
 
-    private void applyCardEffect(Card card){
+    private void aplicarEfecto(Card carta, int jugadorQueJugo) {
 
-        switch(card.getType()){
+        int siguiente = (turnoActual + direccion + jugadores.size()) % jugadores.size();
 
-            case "SKIP":
+        switch (carta.getTipo()) {
 
-                System.out.println("Turno saltado");
+            case "+2":
 
-                // mismo jugador vuelve a jugar
+                jugadores.get(siguiente).addCard(deck.drawCard());
+                jugadores.get(siguiente).addCard(deck.drawCard());
+
+                System.out.println("Jugador " + siguiente + " roba 2");
+
+                turnoActual = (siguiente + direccion + jugadores.size()) % jugadores.size();
                 break;
 
+            case "+4":
 
-            case "DRAW2":
-
-                System.out.println("+2 activado");
-
-                if(turnoJugador){
-
-                    computadora.addCard(deck.drawCard());
-                    computadora.addCard(deck.drawCard());
-
-                }else{
-
-                    jugador.addCard(deck.drawCard());
-                    jugador.addCard(deck.drawCard());
+                for (int i = 0; i < 4; i++) {
+                    jugadores.get(siguiente).addCard(deck.drawCard());
                 }
 
-                break;
+                System.out.println("Jugador " + siguiente + " roba 4");
 
+                String color;
 
-            case "DRAW4":
-
-                System.out.println("+4 activado");
-
-                String color4;
-
-                if(turnoJugador){
-
-                    for(int i=0;i<4;i++)
-                        computadora.addCard(deck.drawCard());
+                if (jugadorQueJugo == 0) {
 
                     System.out.println("Elige color: 1-Rojo 2-Azul 3-Verde 4-Amarillo");
+                    int op = scanner.nextInt();
 
-                    int opcion = scanner.nextInt();
+                    color = "Rojo";
 
-                    color4="Rojo";
-
-                    switch(opcion){
-                        case 1: color4="Rojo"; break;
-                        case 2: color4="Azul"; break;
-                        case 3: color4="Verde"; break;
-                        case 4: color4="Amarillo"; break;
+                    switch (op) {
+                        case 2: color = "Azul"; break;
+                        case 3: color = "Verde"; break;
+                        case 4: color = "Amarillo"; break;
                     }
 
-                }else{
+                } else {
 
-                    for(int i=0;i<4;i++)
-                        jugador.addCard(deck.drawCard());
+                    String[] colores = {"Rojo","Azul","Verde","Amarillo"};
+                    color = colores[new Random().nextInt(4)];
 
-                    String[] colores={"Rojo","Azul","Verde","Amarillo"};
-
-                    int random=(int)(Math.random()*4);
-
-                    color4=colores[random];
-
-                    System.out.println("Computadora eligió color: "+color4);
+                    System.out.println("IA eligió color: " + color);
                 }
 
-                cartaMesa = new Card(color4,-1,"DRAW4");
+                cartaMesa = new Card(color, -1, "+4");
 
+                turnoActual = (siguiente + direccion + jugadores.size()) % jugadores.size();
                 break;
 
+            case "SALTO":
 
-            case "REVERSE":
-
-                System.out.println("Reversa: juegas nuevamente");
-
+                turnoActual = (siguiente + direccion + jugadores.size()) % jugadores.size();
+                System.out.println("Jugador saltado");
                 break;
 
+            case "REVERSA":
+
+                direccion *= -1;
+                turnoActual = siguiente;
+                System.out.println("Dirección invertida");
+                break;
 
             case "WILD":
 
                 String nuevoColor;
 
-                if(turnoJugador){
+                if (jugadorQueJugo == 0) {
 
                     System.out.println("Elige color: 1-Rojo 2-Azul 3-Verde 4-Amarillo");
+                    int op = scanner.nextInt();
 
-                    int opcion = scanner.nextInt();
+                    nuevoColor = "Rojo";
 
-                    nuevoColor="Rojo";
-
-                    switch(opcion){
-                        case 1: nuevoColor="Rojo"; break;
-                        case 2: nuevoColor="Azul"; break;
-                        case 3: nuevoColor="Verde"; break;
-                        case 4: nuevoColor="Amarillo"; break;
+                    switch (op) {
+                        case 2: nuevoColor = "Azul"; break;
+                        case 3: nuevoColor = "Verde"; break;
+                        case 4: nuevoColor = "Amarillo"; break;
                     }
 
-                }else{
+                } else {
 
-                    String[] colores={"Rojo","Azul","Verde","Amarillo"};
+                    String[] colores = {"Rojo","Azul","Verde","Amarillo"};
+                    nuevoColor = colores[new Random().nextInt(4)];
 
-                    int random=(int)(Math.random()*4);
-
-                    nuevoColor=colores[random];
-
-                    System.out.println("Computadora eligió color: "+nuevoColor);
+                    System.out.println("IA eligió color: " + nuevoColor);
                 }
 
-                cartaMesa = new Card(nuevoColor,-1,"WILD");
+                cartaMesa = new Card(nuevoColor, -1, "WILD");
 
+                turnoActual = siguiente;
                 break;
-
 
             default:
 
-                turnoJugador = !turnoJugador;
+                turnoActual = siguiente;
         }
     }
 
-    private boolean isGameOver(){
+    private void avanzarTurno() {
+        turnoActual = (turnoActual + direccion + jugadores.size()) % jugadores.size();
+    }
 
-        if(jugador.size()==0){
-            System.out.println("¡Ganaste!");
-            return true;
-        }
+    private boolean isGameOver() {
 
-        if(computadora.size()==0){
-            System.out.println("Computadora gana");
-            return true;
+        for (int i = 0; i < jugadores.size(); i++) {
+
+            if (jugadores.get(i).size() == 0) {
+
+                if (i == 0) {
+                    System.out.println("¡" + nombreJugador + " ha ganado!");
+                } else {
+                    System.out.println("¡IA " + i + " ha ganado!");
+                }
+
+                return true;
+            }
         }
 
         return false;
+    }
+
+    private void mostrarEstado() {
+
+        System.out.println("\n===== ESTADO =====");
+        System.out.println("Carta en mesa: " + cartaMesa);
+
+        if (turnoActual == 0) {
+            System.out.println("Turno: " + nombreJugador);
+        } else {
+            System.out.println("Turno: IA " + turnoActual);
+        }
+
+        System.out.println(nombreJugador + ": " + jugadores.get(0).size() + " cartas");
+    }
+
+    private void verificarUNO(int jugadorIndex) {
+
+        if (jugadores.get(jugadorIndex).size() == 1) {
+
+            if (jugadorIndex == 0) {
+                System.out.println("¡UNO! (" + nombreJugador + ")");
+            } else {
+                System.out.println("¡UNO! (IA " + jugadorIndex + ")");
+            }
+        }
     }
 }
