@@ -2,12 +2,12 @@ public class Card {
 
     private String color;
     private int number;
-    private String type;
+    private String tipo; // NUMERO, +2, +4, REVERSA, SALTO, WILD
 
-    public Card(String color, int number, String type) {
+    public Card(String color, int number, String tipo) {
         this.color = color;
         this.number = number;
-        this.type = type;
+        this.tipo = tipo;
     }
 
     public String getColor() {
@@ -18,20 +18,31 @@ public class Card {
         return number;
     }
 
-    public String getType() {
-        return type;
+    public String getTipo() {
+        return tipo;
     }
 
     public boolean isPlayable(Card cartaMesa) {
 
-        if (this.color.equals(cartaMesa.getColor()))
+        // comodines siempre se pueden jugar
+        if (this.tipo.equals("+4") || this.tipo.equals("WILD")) {
             return true;
+        }
 
-        if (this.type.equals("NUMBER") && this.number == cartaMesa.getNumber())
+        // mismo color
+        if (this.color.equals(cartaMesa.color)) {
             return true;
+        }
 
-        if (this.type.equals("WILD") || this.type.equals("DRAW4"))
+        // números iguales
+        if (this.tipo.equals("NUMERO") && cartaMesa.tipo.equals("NUMERO")) {
+            return this.number == cartaMesa.number;
+        }
+
+        // cartas especiales iguales
+        if (!this.tipo.equals("NUMERO") && this.tipo.equals(cartaMesa.tipo)) {
             return true;
+        }
 
         return false;
     }
@@ -39,10 +50,11 @@ public class Card {
     @Override
     public String toString() {
 
-        if(type.equals("NUMBER")){
+        if (tipo.equals("NUMERO")) {
             return color + " " + number;
         } else {
-            return color + " " + type;
+            return color + " " + tipo;
         }
     }
 }
+
